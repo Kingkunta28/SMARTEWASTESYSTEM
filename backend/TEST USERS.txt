@@ -1,0 +1,11 @@
+USER: testadmin
+EMAIL: admin1@example.com
+PASSWORD: Pass@12345
+
+USER: testcollector
+EMAIL: collector1@example.com 
+PASSWORD: Pass@12345
+
+USER: testuser
+EMAIL: user1@example.com
+PASSWORD: Pass@12345
