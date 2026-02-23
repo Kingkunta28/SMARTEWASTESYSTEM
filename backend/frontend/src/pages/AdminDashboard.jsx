@@ -7,17 +7,28 @@ export default function AdminDashboard({ requests, refresh }) {
   const [collectors, setCollectors] = useState([]);
   const [stats, setStats] = useState(null);
   const [selectedCollectors, setSelectedCollectors] = useState({});
+  const [collectorForm, setCollectorForm] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    password: "",
+    phone: "",
+    address: ""
+  });
+  const [showCollectorRegistration, setShowCollectorRegistration] = useState(false);
+  const [showCollectorPassword, setShowCollectorPassword] = useState(false);
   const [reportMonth, setReportMonth] = useState(currentMonth);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  const loadDashboardData = async () => {
+    const [collectorData, statData] = await Promise.all([api.listCollectors(), api.dashboardStats()]);
+    setCollectors(collectorData);
+    setStats(statData);
+  };
+
   useEffect(() => {
-    Promise.all([api.listCollectors(), api.dashboardStats()])
-      .then(([collectorData, statData]) => {
-        setCollectors(collectorData);
-        setStats(statData);
-      })
-      .catch((err) => setError(err.message));
+    loadDashboardData().catch((err) => setError(err.message));
   }, []);
 
   const assign = async (requestId, collectorId) => {
@@ -47,6 +58,33 @@ export default function AdminDashboard({ requests, refresh }) {
 
   const setCollectorSelection = (requestId, collectorId) => {
     setSelectedCollectors((prev) => ({ ...prev, [requestId]: collectorId }));
+  };
+
+  const updateCollectorForm = (field, value) => {
+    setCollectorForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const registerCollector = async (event) => {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+    try {
+      await api.registerCollector(collectorForm);
+      await loadDashboardData();
+      setCollectorForm({
+        first_name: "",
+        last_name: "",
+        email: "",
+        password: "",
+        phone: "",
+        address: ""
+      });
+      setShowCollectorPassword(false);
+      setSuccess("Collector account registered successfully.");
+      setShowCollectorRegistration(false);
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   const exportMonthlyReport = async () => {
@@ -108,6 +146,81 @@ export default function AdminDashboard({ requests, refresh }) {
       ) : null}
       {error ? <p className="error">{error}</p> : null}
       {success ? <p className="success">{success}</p> : null}
+
+      <div className="card table-shell">
+        <button type="button" onClick={() => setShowCollectorRegistration(true)}>
+          Collectors Registration
+        </button>
+        {showCollectorRegistration ? (
+          <form className="form-grid" onSubmit={registerCollector}>
+            <label>
+              First Name
+              <input
+                type="text"
+                value={collectorForm.first_name}
+                onChange={(e) => updateCollectorForm("first_name", e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Last Name
+              <input
+                type="text"
+                value={collectorForm.last_name}
+                onChange={(e) => updateCollectorForm("last_name", e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Email
+              <input
+                type="email"
+                value={collectorForm.email}
+                onChange={(e) => updateCollectorForm("email", e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Password
+              <div className="password-wrap">
+                <input
+                  type={showCollectorPassword ? "text" : "password"}
+                  value={collectorForm.password}
+                  onChange={(e) => updateCollectorForm("password", e.target.value)}
+                  minLength={8}
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowCollectorPassword((prev) => !prev)}
+                  aria-label={showCollectorPassword ? "Hide password" : "Show password"}
+                  title={showCollectorPassword ? "Hide password" : "Show password"}
+                >
+                  {showCollectorPassword ? "🙈" : "👁️"}
+                </button>
+              </div>
+            </label>
+            <label>
+              Phone
+              <input
+                type="text"
+                value={collectorForm.phone}
+                onChange={(e) => updateCollectorForm("phone", e.target.value)}
+              />
+            </label>
+            <label>
+              Address
+              <input
+                type="text"
+                value={collectorForm.address}
+                onChange={(e) => updateCollectorForm("address", e.target.value)}
+              />
+            </label>
+            <button type="submit">Register Collector</button>
+          </form>
+        ) : null}
+      </div>
 
       <div className="card table-shell">
         <div className="section-head">

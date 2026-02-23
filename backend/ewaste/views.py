@@ -477,6 +477,65 @@ def collectors_view(request):
     return JsonResponse(list(collectors), safe=False)
 
 
+@csrf_exempt
+@require_http_methods(["POST"])
+def register_collector_view(request):
+    auth_error = _require_auth(request)
+    if auth_error:
+        return auth_error
+    if _role(request.user) != UserProfile.ROLE_ADMIN:
+        return _error("Only admins can register collectors", 403)
+
+    data = _json_body(request)
+    if data is None:
+        return _error("Invalid JSON payload")
+
+    first_name = (data.get("first_name") or "").strip()
+    last_name = (data.get("last_name") or "").strip()
+    email = (data.get("email") or "").strip()
+    password = data.get("password") or ""
+    phone = (data.get("phone") or "").strip()
+    address = (data.get("address") or "").strip()
+
+    if not first_name or not last_name or not email or not password:
+        return _error("first_name, last_name, email and password are required")
+    if len(password) < 8:
+        return _error("Password must be at least 8 characters")
+    if User.objects.filter(email__iexact=email).exists():
+        return _error("Email already exists")
+
+    username = _build_unique_username_from_email(email)
+    collector = User.objects.create_user(
+        username=username,
+        email=email,
+        password=password,
+        first_name=first_name,
+        last_name=last_name,
+    )
+    profile = _profile_for(collector)
+    profile.role = UserProfile.ROLE_COLLECTOR
+    profile.phone = phone
+    profile.address = address
+    profile.save()
+
+    return JsonResponse(
+        {
+            "message": "Collector account created",
+            "collector": {
+                "id": collector.id,
+                "username": collector.username,
+                "email": collector.email,
+                "first_name": collector.first_name,
+                "last_name": collector.last_name,
+                "phone": profile.phone,
+                "address": profile.address,
+                "role": profile.role,
+            },
+        },
+        status=201,
+    )
+
+
 @require_http_methods(["GET"])
 def dashboard_stats_view(request):
     auth_error = _require_auth(request)
