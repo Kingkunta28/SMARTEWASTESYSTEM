@@ -6,7 +6,10 @@ from datetime import date
 from io import BytesIO
 
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.password_validation import validate_password
 from django.contrib.auth.models import User
+from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
@@ -23,6 +26,29 @@ def _json_body(request):
 
 def _error(message, status=400):
     return JsonResponse({"error": message}, status=status)
+
+
+def _client_ip(request):
+    forwarded = (request.META.get("HTTP_X_FORWARDED_FOR") or "").split(",")[0].strip()
+    return forwarded or request.META.get("REMOTE_ADDR") or "unknown"
+
+
+def _throttle(request, scope, identifier="", limit=10, window_seconds=300):
+    key = f"throttle:{scope}:{_client_ip(request)}:{(identifier or '').lower()}"
+    attempts = cache.get(key, 0)
+    if attempts >= limit:
+        return _error("Too many attempts. Try again later.", 429)
+    cache.set(key, attempts + 1, timeout=window_seconds)
+    return None
+
+
+def _validate_user_password(password, user=None):
+    try:
+        validate_password(password, user=user)
+    except ValidationError as exc:
+        first_message = exc.messages[0] if exc.messages else "Password is not valid"
+        return _error(first_message)
+    return None
 
 
 def _profile_for(user):
@@ -89,6 +115,10 @@ def register_view(request):
     if data is None:
         return _error("Invalid JSON payload")
 
+    throttled = _throttle(request, "register", limit=10, window_seconds=600)
+    if throttled:
+        return throttled
+
     first_name = (data.get("first_name") or "").strip()
     last_name = (data.get("last_name") or "").strip()
     email = (data.get("email") or "").strip()
@@ -100,6 +130,9 @@ def register_view(request):
         return _error("first_name, last_name, email and password are required")
     if User.objects.filter(email__iexact=email).exists():
         return _error("Email already exists")
+    password_error = _validate_user_password(password)
+    if password_error:
+        return password_error
 
     # Use email as username for normal registrations.
     username = _build_unique_username_from_email(email)
@@ -139,14 +172,19 @@ def login_view(request):
     email = (data.get("email") or "").strip()
     username = (data.get("username") or "").strip()
     password = data.get("password") or ""
+    identifier = email or username
+    throttled = _throttle(request, "login", identifier=identifier, limit=10, window_seconds=300)
+    if throttled:
+        return throttled
 
     user = None
     if email:
-        try:
-            account = User.objects.get(email__iexact=email)
-            user = authenticate(username=account.username, password=password)
-        except User.DoesNotExist:
-            user = None
+        accounts = User.objects.filter(email__iexact=email).order_by("id")
+        for account in accounts:
+            authenticated = authenticate(username=account.username, password=password)
+            if authenticated:
+                user = authenticated
+                break
     elif username:
         # Backward-compatible fallback for existing username-based accounts.
         user = authenticate(username=username, password=password)
@@ -177,16 +215,25 @@ def forgot_password_view(request):
 
     email = (data.get("email") or "").strip()
     new_password = data.get("new_password") or ""
+    throttled = _throttle(request, "forgot-password", identifier=email, limit=5, window_seconds=900)
+    if throttled:
+        return throttled
 
     if not email or not new_password:
         return _error("email and new_password are required")
-    if len(new_password) < 8:
-        return _error("Password must be at least 8 characters")
 
     try:
         user = User.objects.get(email__iexact=email)
     except User.DoesNotExist:
         return _error("No user found with provided email", 404)
+    except User.MultipleObjectsReturned:
+        user = User.objects.filter(email__iexact=email).order_by("id").first()
+        if not user:
+            return _error("No user found with provided email", 404)
+
+    password_error = _validate_user_password(new_password, user=user)
+    if password_error:
+        return password_error
 
     user.set_password(new_password)
     user.save()
@@ -246,7 +293,7 @@ def profile_view(request):
         return _error("Invalid JSON payload")
 
     email = (data.get("email") or request.user.email).strip()
-    if User.objects.exclude(id=request.user.id).filter(email=email).exists():
+    if User.objects.exclude(id=request.user.id).filter(email__iexact=email).exists():
         return _error("Email already exists")
 
     request.user.first_name = (data.get("first_name") or request.user.first_name).strip()
@@ -300,7 +347,10 @@ def requests_view(request):
     item_type = (data.get("item_type") or "").strip()
     pickup_address = (data.get("pickup_address") or "").strip()
     pickup_date = data.get("pickup_date")
-    quantity = int(data.get("quantity") or 1)
+    try:
+        quantity = int(data.get("quantity") or 1)
+    except (TypeError, ValueError):
+        return _error("quantity must be a valid number")
     condition = (data.get("condition") or "").strip()
     brand = (data.get("brand") or "").strip()
     notes = (data.get("notes") or "").strip()
@@ -365,7 +415,10 @@ def request_detail_view(request, request_id):
 
     quantity = data.get("quantity")
     if quantity is not None:
-        quantity = int(quantity)
+        try:
+            quantity = int(quantity)
+        except (TypeError, ValueError):
+            return _error("quantity must be a valid number")
         if quantity < 1:
             return _error("quantity must be at least 1")
         req.quantity = quantity
@@ -399,6 +452,10 @@ def assign_request_view(request, request_id):
     collector_id = data.get("collector_id")
     if not collector_id:
         return _error("collector_id is required")
+    try:
+        collector_id = int(collector_id)
+    except (TypeError, ValueError):
+        return _error("collector_id must be a valid number")
 
     try:
         req = EWasteRequest.objects.select_related("user", "assigned_collector").get(id=request_id)
@@ -490,10 +547,11 @@ def register_collector_view(request):
 
     if not first_name or not last_name or not email or not password:
         return _error("first_name, last_name, email and password are required")
-    if len(password) < 8:
-        return _error("Password must be at least 8 characters")
     if User.objects.filter(email__iexact=email).exists():
         return _error("Email already exists")
+    password_error = _validate_user_password(password)
+    if password_error:
+        return password_error
 
     username = _build_unique_username_from_email(email)
     collector = User.objects.create_user(
@@ -748,7 +806,7 @@ def monthly_report_pdf_view(request):
     pdf.setFillColor(text_muted)
     pdf.setFont("Helvetica", 8)
     pdf.drawString(left, 28, f"Report Month: {month_name[month]} {year}")
-    pdf.drawCentredString(width / 2, 28, "Smart E-Waste Management • Zanzibar")
+    pdf.drawCentredString(width / 2, 28, "Smart E-Waste Management - Zanzibar")
     pdf.drawRightString(right, 28, f"Generated on {datetime.now().strftime('%Y-%m-%d %H:%M')}")
     pdf.save()
     buffer.seek(0)

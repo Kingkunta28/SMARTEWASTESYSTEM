@@ -11,7 +11,10 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import sys
+import warnings
 from pathlib import Path
+from django.core.management.utils import get_random_secret_key
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -25,14 +28,23 @@ def _env_list(name, default):
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "dev-only-please-set-django-secret-key-4r7d9u2k1m8p3x6v0q5w1e9t2y7u4i8o",
-)
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
+IS_TESTING = "test" in sys.argv
+ENVIRONMENT = os.environ.get("DJANGO_ENV", "development").lower()
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    is_production_env = ENVIRONMENT in {"production", "prod"}
+    if is_production_env and not IS_TESTING:
+        raise RuntimeError("DJANGO_SECRET_KEY is required when DJANGO_ENV is production")
+    # No static fallback key is committed; use an ephemeral one for local/test.
+    SECRET_KEY = get_random_secret_key()
+    warnings.warn(
+        "DJANGO_SECRET_KEY is not set. Using an ephemeral key; set DJANGO_SECRET_KEY for stable sessions.",
+        RuntimeWarning,
+    )
 
 ALLOWED_HOSTS = _env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
 
@@ -157,9 +169,13 @@ if not DEBUG:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
-    SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "false").lower() == "true"
+    default_ssl_redirect = "false" if IS_TESTING else "true"
+    SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", default_ssl_redirect).lower() == "true"
     SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_SECURE_HSTS_SECONDS", "31536000"))
     SECURE_HSTS_INCLUDE_SUBDOMAINS = os.environ.get(
         "DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS", "true"
     ).lower() == "true"
     SECURE_HSTS_PRELOAD = os.environ.get("DJANGO_SECURE_HSTS_PRELOAD", "true").lower() == "true"
+
+SESSION_COOKIE_SAMESITE = os.environ.get("DJANGO_SESSION_COOKIE_SAMESITE", "Lax")
+CSRF_COOKIE_SAMESITE = os.environ.get("DJANGO_CSRF_COOKIE_SAMESITE", "Lax")
