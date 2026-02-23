@@ -3,6 +3,7 @@ const browserHost =
     ? window.location.hostname
     : "127.0.0.1";
 const API_BASE = `http://${browserHost}:8000/api`;
+let csrfInitPromise = null;
 
 function getCookie(name) {
   if (typeof document === "undefined") return "";
@@ -11,9 +12,25 @@ function getCookie(name) {
   return match ? decodeURIComponent(match[1]) : "";
 }
 
+async function ensureCsrfCookie() {
+  if (getCookie("csrftoken")) return;
+  if (!csrfInitPromise) {
+    csrfInitPromise = fetch(`${API_BASE}/auth/csrf/`, {
+      method: "GET",
+      credentials: "include"
+    }).finally(() => {
+      csrfInitPromise = null;
+    });
+  }
+  await csrfInitPromise;
+}
+
 async function call(path, options = {}) {
   const method = (options.method || "GET").toUpperCase();
   const unsafeMethod = !["GET", "HEAD", "OPTIONS", "TRACE"].includes(method);
+  if (unsafeMethod) {
+    await ensureCsrfCookie();
+  }
   const csrfToken = unsafeMethod ? getCookie("csrftoken") : "";
 
   const response = await fetch(`${API_BASE}${path}`, {

@@ -3,6 +3,7 @@ from django.urls import path
 from .views import (
     assign_request_view,
     collectors_view,
+    csrf_view,
     dashboard_stats_view,
     forgot_password_view,
     login_view,
@@ -19,6 +20,7 @@ from .views import (
 
 urlpatterns = [
     path("auth/register/", register_view, name="register"),
+    path("auth/csrf/", csrf_view, name="csrf"),
     path("auth/login/", login_view, name="login"),
     path("auth/forgot-password/", forgot_password_view, name="forgot-password"),
     path("auth/logout/", logout_view, name="logout"),

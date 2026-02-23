@@ -9,7 +9,6 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .models import EWasteRequest, UserProfile
@@ -84,7 +83,6 @@ def _require_auth(request):
     return None
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def register_view(request):
     data = _json_body(request)
@@ -132,7 +130,6 @@ def register_view(request):
     )
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def login_view(request):
     data = _json_body(request)
@@ -172,7 +169,6 @@ def login_view(request):
     )
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def forgot_password_view(request):
     data = _json_body(request)
@@ -197,7 +193,6 @@ def forgot_password_view(request):
     return JsonResponse({"message": "Password reset successful"})
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def logout_view(request):
     logout(request)
@@ -225,7 +220,6 @@ def me_view(request):
     )
 
 
-@csrf_exempt
 @require_http_methods(["GET", "PATCH"])
 def profile_view(request):
     auth_error = _require_auth(request)
@@ -281,7 +275,6 @@ def profile_view(request):
     )
 
 
-@csrf_exempt
 @require_http_methods(["GET", "POST"])
 def requests_view(request):
     auth_error = _require_auth(request)
@@ -336,7 +329,6 @@ def requests_view(request):
     return JsonResponse(_serialize_request(req), status=201)
 
 
-@csrf_exempt
 @require_http_methods(["GET", "PATCH"])
 def request_detail_view(request, request_id):
     auth_error = _require_auth(request)
@@ -392,7 +384,6 @@ def request_detail_view(request, request_id):
     return JsonResponse(_serialize_request(req))
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def assign_request_view(request, request_id):
     auth_error = _require_auth(request)
@@ -428,7 +419,6 @@ def assign_request_view(request, request_id):
     return JsonResponse(_serialize_request(req))
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def update_status_view(request, request_id):
     auth_error = _require_auth(request)
@@ -535,6 +525,12 @@ def register_collector_view(request):
         },
         status=201,
     )
+
+
+@ensure_csrf_cookie
+@require_http_methods(["GET"])
+def csrf_view(request):
+    return JsonResponse({"message": "CSRF cookie set"})
 
 
 @require_http_methods(["GET"])
