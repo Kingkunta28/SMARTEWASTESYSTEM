@@ -4,10 +4,22 @@ const browserHost =
     : "127.0.0.1";
 const API_BASE = `http://${browserHost}:8000/api`;
 
+function getCookie(name) {
+  if (typeof document === "undefined") return "";
+  const escapedName = name.replace(/[-[\]/{}()*+?.\\^$|]/g, "\\$&");
+  const match = document.cookie.match(new RegExp(`(?:^|; )${escapedName}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
 async function call(path, options = {}) {
+  const method = (options.method || "GET").toUpperCase();
+  const unsafeMethod = !["GET", "HEAD", "OPTIONS", "TRACE"].includes(method);
+  const csrfToken = unsafeMethod ? getCookie("csrftoken") : "";
+
   const response = await fetch(`${API_BASE}${path}`, {
     headers: {
       "Content-Type": "application/json",
+      ...(csrfToken ? { "X-CSRFToken": csrfToken } : {}),
       ...(options.headers || {})
     },
     credentials: "include",

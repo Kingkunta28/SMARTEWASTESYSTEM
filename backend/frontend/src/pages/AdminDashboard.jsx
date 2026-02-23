@@ -70,7 +70,6 @@ export default function AdminDashboard({ requests, refresh }) {
     setSuccess("");
     try {
       await api.registerCollector(collectorForm);
-      await loadDashboardData();
       setCollectorForm({
         first_name: "",
         last_name: "",
@@ -82,6 +81,7 @@ export default function AdminDashboard({ requests, refresh }) {
       setShowCollectorPassword(false);
       setSuccess("Collector account registered successfully.");
       setShowCollectorRegistration(false);
+      loadDashboardData().catch((err) => setError(err.message));
     } catch (err) {
       setError(err.message);
     }
@@ -197,7 +197,7 @@ export default function AdminDashboard({ requests, refresh }) {
                   aria-label={showCollectorPassword ? "Hide password" : "Show password"}
                   title={showCollectorPassword ? "Hide password" : "Show password"}
                 >
-                  {showCollectorPassword ? "🙈" : "👁️"}
+                  {showCollectorPassword ? "\u{1F648}" : "\u{1F441}\uFE0F"}
                 </button>
               </div>
             </label>
@@ -284,3 +284,4 @@ export default function AdminDashboard({ requests, refresh }) {
     </section>
   );
 }
+

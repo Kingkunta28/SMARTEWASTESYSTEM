@@ -8,6 +8,7 @@ from io import BytesIO
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.http import HttpResponse, JsonResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
@@ -461,6 +462,7 @@ def update_status_view(request, request_id):
     return JsonResponse(_serialize_request(req))
 
 
+@ensure_csrf_cookie
 @require_http_methods(["GET"])
 def collectors_view(request):
     auth_error = _require_auth(request)
@@ -477,7 +479,6 @@ def collectors_view(request):
     return JsonResponse(list(collectors), safe=False)
 
 
-@csrf_exempt
 @require_http_methods(["POST"])
 def register_collector_view(request):
     auth_error = _require_auth(request)
