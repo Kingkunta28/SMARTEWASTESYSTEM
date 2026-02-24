@@ -32,12 +32,12 @@ def _env_list(name, default):
 DEBUG = os.environ.get("DJANGO_DEBUG", "false").lower() == "true"
 IS_TESTING = "test" in sys.argv
 ENVIRONMENT = os.environ.get("DJANGO_ENV", "development").lower()
+IS_PRODUCTION = ENVIRONMENT in {"production", "prod"}
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
-    is_production_env = ENVIRONMENT in {"production", "prod"}
-    if is_production_env and not IS_TESTING:
+    if IS_PRODUCTION and not IS_TESTING:
         raise RuntimeError("DJANGO_SECRET_KEY is required when DJANGO_ENV is production")
     # No static fallback key is committed; use an ephemeral one for local/test.
     SECRET_KEY = get_random_secret_key()
@@ -165,7 +165,7 @@ CSRF_TRUSTED_ORIGINS = _env_list(
     "http://127.0.0.1:5173,http://localhost:5173",
 )
 
-if not DEBUG:
+if IS_PRODUCTION:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
