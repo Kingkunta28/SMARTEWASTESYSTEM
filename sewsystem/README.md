@@ -54,7 +54,11 @@ Frontend URL: `http://127.0.0.1:5173`
    - `FRONTEND_ORIGIN=https://your-frontend.vercel.app`
    - `FRONTEND_ORIGINS=https://your-frontend.vercel.app`
    - `DJANGO_CSRF_TRUSTED_ORIGINS=https://your-frontend.vercel.app`
+   - `DJANGO_SUPERUSER_EMAIL=Raya@gmail.com`
+   - `DJANGO_SUPERUSER_USERNAME=Raya@gmail.com`
+   - `DJANGO_SUPERUSER_PASSWORD=Raya@1234`
 5. After first deploy, copy backend URL (example: `https://sewsystem-backend.onrender.com`).
+6. On each deploy, `build.sh` will automatically create/update this superuser.
 
 ### 2) Deploy frontend to Vercel
 
