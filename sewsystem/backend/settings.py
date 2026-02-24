@@ -15,6 +15,7 @@ import sys
 import warnings
 from pathlib import Path
 from django.core.management.utils import get_random_secret_key
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -63,6 +64,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'ewaste.middleware.SimpleCorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -96,7 +98,12 @@ WSGI_APPLICATION = "backend.wsgi.application"
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASE_ENGINE = os.environ.get("DJANGO_DB_ENGINE", "django.db.backends.sqlite3")
-if DATABASE_ENGINE == "django.db.backends.sqlite3":
+DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+if DATABASE_URL:
+    DATABASES = {
+        "default": dj_database_url.parse(DATABASE_URL, conn_max_age=600, ssl_require=IS_PRODUCTION),
+    }
+elif DATABASE_ENGINE == "django.db.backends.sqlite3":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -150,7 +157,9 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

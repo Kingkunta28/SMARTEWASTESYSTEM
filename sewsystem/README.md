@@ -16,7 +16,7 @@ This project implements the SUZA Smart E-Waste Collection System with:
 
 ## Backend Setup (Django)
 
-From `c:\Users\XS0ulR3aperX\Desktop\SEWSYSTEM\backend`:
+From `c:\Users\XS0ulR3aperX\Desktop\SEWSYSTEM\sewsystem`:
 
 ```powershell
 python -m venv .venv
@@ -31,7 +31,7 @@ Backend base URL: `http://127.0.0.1:8000`
 
 ## Frontend Setup (React)
 
-From `c:\Users\XS0ulR3aperX\Desktop\SEWSYSTEM\backend\frontend`:
+From `c:\Users\XS0ulR3aperX\Desktop\SEWSYSTEM\sewsystem\frontend`:
 
 ```powershell
 npm install
@@ -39,6 +39,41 @@ npm run dev
 ```
 
 Frontend URL: `http://127.0.0.1:5173`
+
+## Deploy: Render (backend) + Vercel (frontend)
+
+### 1) Deploy backend to Render
+
+1. Push this repo to GitHub.
+2. In Render, create a new Blueprint and select this repo.
+3. Render will pick up `render.yaml` and create:
+   - A Django web service
+   - A PostgreSQL database
+4. In the backend service env vars, set these with your final Vercel domain:
+   - `DJANGO_ALLOWED_HOSTS=your-render-backend.onrender.com`
+   - `FRONTEND_ORIGIN=https://your-frontend.vercel.app`
+   - `FRONTEND_ORIGINS=https://your-frontend.vercel.app`
+   - `DJANGO_CSRF_TRUSTED_ORIGINS=https://your-frontend.vercel.app`
+5. After first deploy, copy backend URL (example: `https://sewsystem-backend.onrender.com`).
+
+### 2) Deploy frontend to Vercel
+
+1. Import the same repo in Vercel.
+2. Set:
+   - Root Directory: `frontend`
+   - Framework Preset: `Vite`
+3. Add env var:
+   - `VITE_API_BASE_URL=https://your-render-backend.onrender.com/api`
+4. Deploy.
+
+### 3) Finalize CORS/CSRF on Render
+
+After Vercel gives final URL, update these backend vars on Render and redeploy:
+
+- `DJANGO_ALLOWED_HOSTS`
+- `FRONTEND_ORIGIN`
+- `FRONTEND_ORIGINS`
+- `DJANGO_CSRF_TRUSTED_ORIGINS`
 
 ## API Endpoints
 

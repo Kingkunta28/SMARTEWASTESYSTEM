@@ -1,8 +1,6 @@
-const browserHost =
-  typeof window !== "undefined" && window.location?.hostname
-    ? window.location.hostname
-    : "127.0.0.1";
-const API_BASE = `http://${browserHost}:8000/api`;
+const defaultApiBase = "http://127.0.0.1:8000/api";
+const configuredApiBase = import.meta.env.VITE_API_BASE_URL || defaultApiBase;
+const API_BASE = configuredApiBase.replace(/\/+$/, "");
 let csrfInitPromise = null;
 
 function getCookie(name) {
