@@ -2,6 +2,7 @@ services:
   - type: web
     name: sewsystem-backend
     env: python
+    plan: free
     rootDir: sewsystem
     buildCommand: bash ./build.sh
     startCommand: gunicorn backend.wsgi:application
@@ -36,4 +37,5 @@ services:
 
 databases:
   - name: sewsystem-db
+    plan: free
     databaseName: sewsystem
