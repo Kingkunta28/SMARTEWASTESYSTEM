@@ -170,12 +170,12 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 FRONTEND_ORIGIN = _normalize_origin(os.environ.get("FRONTEND_ORIGIN", "http://127.0.0.1:5173"))
 FRONTEND_ORIGINS = _env_list(
     "FRONTEND_ORIGINS",
-    f"{FRONTEND_ORIGIN},http://localhost:5173",
+    f"{FRONTEND_ORIGIN},http://127.0.0.1:5173,http://localhost:5173,https://*.vercel.app",
 )
 FRONTEND_ORIGINS = [_normalize_origin(origin) for origin in FRONTEND_ORIGINS]
 CSRF_TRUSTED_ORIGINS = _env_list(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
-    "http://127.0.0.1:5173,http://localhost:5173",
+    f"{FRONTEND_ORIGIN},http://127.0.0.1:5173,http://localhost:5173,https://*.vercel.app",
 )
 CSRF_TRUSTED_ORIGINS = [_normalize_origin(origin) for origin in CSRF_TRUSTED_ORIGINS]
 
