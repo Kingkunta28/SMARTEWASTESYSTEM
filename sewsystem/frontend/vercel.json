@@ -1,12 +1,13 @@
 {
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/:path*",
-      "destination": "https://sewsystem-backend.onrender.com/api/:path*"
+      "src": "/api/(.*)",
+      "dest": "https://sewsystem-backend.onrender.com/api/$1"
     },
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "methods": ["GET", "HEAD"],
+      "dest": "/index.html"
     }
   ]
 }
