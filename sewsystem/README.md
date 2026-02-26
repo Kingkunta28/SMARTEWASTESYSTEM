@@ -66,8 +66,9 @@ Frontend URL: `http://127.0.0.1:5173`
 2. Set:
    - Root Directory: `frontend`
    - Framework Preset: `Vite`
-3. Add env var:
-   - `VITE_API_BASE_URL=https://your-render-backend.onrender.com/api`
+3. API routing on Vercel is already configured in `frontend/vercel.json`:
+   - `/api/*` -> `https://sewsystem-backend.onrender.com/api/*`
+   - You can optionally override with `VITE_API_BASE_URL` if needed.
 4. Deploy.
 
 ### 3) Finalize CORS/CSRF on Render

@@ -1,4 +1,4 @@
-const defaultApiBase = "http://127.0.0.1:8000/api";
+const defaultApiBase = import.meta.env.DEV ? "http://127.0.0.1:8000/api" : "/api";
 const configuredApiBase = import.meta.env.VITE_API_BASE_URL || defaultApiBase;
 const API_BASE = configuredApiBase.replace(/\/+$/, "");
 let csrfInitPromise = null;

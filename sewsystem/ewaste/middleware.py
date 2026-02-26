@@ -2,6 +2,10 @@ from django.http import HttpResponse
 from django.conf import settings
 
 
+def _normalize_origin(origin):
+    return (origin or "").strip().rstrip("/")
+
+
 class SimpleCorsMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -12,9 +16,11 @@ class SimpleCorsMiddleware:
         else:
             response = self.get_response(request)
 
-        origin = request.headers.get("Origin")
-        allowed_origins = set(getattr(settings, "FRONTEND_ORIGINS", []))
-        fallback_origin = getattr(settings, "FRONTEND_ORIGIN", "")
+        origin = _normalize_origin(request.headers.get("Origin"))
+        allowed_origins = {
+            _normalize_origin(candidate) for candidate in getattr(settings, "FRONTEND_ORIGINS", [])
+        }
+        fallback_origin = _normalize_origin(getattr(settings, "FRONTEND_ORIGIN", ""))
         if fallback_origin:
             allowed_origins.add(fallback_origin)
 

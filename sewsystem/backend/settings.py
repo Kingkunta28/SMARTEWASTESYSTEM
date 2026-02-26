@@ -26,6 +26,10 @@ def _env_list(name, default):
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
+def _normalize_origin(origin):
+    return (origin or "").strip().rstrip("/")
+
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
@@ -47,8 +51,7 @@ if not SECRET_KEY:
         RuntimeWarning,
     )
 
-ALLOWED_HOSTS = _env_list("DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost")
-
+ALLOWED_HOSTS = _env_list("DJANGO_ALLOWED_HOSTS", "sewsystem-backend.onrender.com")
 
 # Application definition
 
@@ -164,15 +167,17 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # React dev server support.
-FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://127.0.0.1:5173")
+FRONTEND_ORIGIN = _normalize_origin(os.environ.get("FRONTEND_ORIGIN", "http://127.0.0.1:5173"))
 FRONTEND_ORIGINS = _env_list(
     "FRONTEND_ORIGINS",
     f"{FRONTEND_ORIGIN},http://localhost:5173",
 )
+FRONTEND_ORIGINS = [_normalize_origin(origin) for origin in FRONTEND_ORIGINS]
 CSRF_TRUSTED_ORIGINS = _env_list(
     "DJANGO_CSRF_TRUSTED_ORIGINS",
     "http://127.0.0.1:5173,http://localhost:5173",
 )
+CSRF_TRUSTED_ORIGINS = [_normalize_origin(origin) for origin in CSRF_TRUSTED_ORIGINS]
 
 if IS_PRODUCTION:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -186,5 +191,6 @@ if IS_PRODUCTION:
     ).lower() == "true"
     SECURE_HSTS_PRELOAD = os.environ.get("DJANGO_SECURE_HSTS_PRELOAD", "true").lower() == "true"
 
-SESSION_COOKIE_SAMESITE = os.environ.get("DJANGO_SESSION_COOKIE_SAMESITE", "Lax")
-CSRF_COOKIE_SAMESITE = os.environ.get("DJANGO_CSRF_COOKIE_SAMESITE", "Lax")
+default_samesite = "None" if IS_PRODUCTION else "Lax"
+SESSION_COOKIE_SAMESITE = os.environ.get("DJANGO_SESSION_COOKIE_SAMESITE", default_samesite)
+CSRF_COOKIE_SAMESITE = os.environ.get("DJANGO_CSRF_COOKIE_SAMESITE", default_samesite)
