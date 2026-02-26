@@ -5,8 +5,10 @@
       "dest": "https://sewsystem-backend.onrender.com/api/$1"
     },
     {
+      "handle": "filesystem"
+    },
+    {
       "src": "/(.*)",
-      "methods": ["GET", "HEAD"],
       "dest": "/index.html"
     }
   ]
