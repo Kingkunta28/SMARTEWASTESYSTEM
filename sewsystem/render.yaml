@@ -21,6 +21,10 @@ services:
         sync: false
       - key: DJANGO_CSRF_TRUSTED_ORIGINS
         sync: false
+      - key: DJANGO_SESSION_COOKIE_SAMESITE
+        sync: false
+      - key: DJANGO_CSRF_COOKIE_SAMESITE
+        sync: false
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
