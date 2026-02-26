@@ -100,6 +100,8 @@ def _serialize_request(req):
 def _role(user):
     if not user.is_authenticated:
         return None
+    if user.is_superuser or user.is_staff:
+        return UserProfile.ROLE_ADMIN
     return _profile_for(user).role
 
 
@@ -193,7 +195,6 @@ def login_view(request):
         return _error("Invalid email/username or password", 401)
 
     login(request, user)
-    profile = _profile_for(user)
     return JsonResponse(
         {
             "message": "Logged in",
@@ -201,7 +202,7 @@ def login_view(request):
                 "id": user.id,
                 "username": user.username,
                 "email": user.email,
-                "role": profile.role,
+                "role": _role(user),
             },
         }
     )
@@ -257,14 +258,14 @@ def me_view(request):
         {
             "id": request.user.id,
             "username": request.user.username,
-            "email": request.user.email,
-            "first_name": request.user.first_name,
-            "last_name": request.user.last_name,
-            "role": profile.role,
-            "phone": profile.phone,
-            "address": profile.address,
-        }
-    )
+                "email": request.user.email,
+                "first_name": request.user.first_name,
+                "last_name": request.user.last_name,
+                "role": _role(request.user),
+                "phone": profile.phone,
+                "address": profile.address,
+            }
+        )
 
 
 @require_http_methods(["GET", "PATCH"])
@@ -284,7 +285,7 @@ def profile_view(request):
                 "last_name": request.user.last_name,
                 "phone": profile.phone,
                 "address": profile.address,
-                "role": profile.role,
+                "role": _role(request.user),
             }
         )
 
@@ -316,7 +317,7 @@ def profile_view(request):
                 "last_name": request.user.last_name,
                 "phone": profile.phone,
                 "address": profile.address,
-                "role": profile.role,
+                "role": _role(request.user),
             },
         }
     )

@@ -5,7 +5,7 @@ pip install -r requirements.txt
 python manage.py collectstatic --no-input
 python manage.py migrate
 
-DJANGO_SUPERUSER_EMAIL="${DJANGO_SUPERUSER_EMAIL:-Raya@gmail.com}"
+DJANGO_SUPERUSER_EMAIL="${DJANGO_SUPERUSER_EMAIL:-raya@gmail.com}"
 DJANGO_SUPERUSER_USERNAME="${DJANGO_SUPERUSER_USERNAME:-$DJANGO_SUPERUSER_EMAIL}"
 DJANGO_SUPERUSER_PASSWORD="${DJANGO_SUPERUSER_PASSWORD:-Raya@1234}"
 
